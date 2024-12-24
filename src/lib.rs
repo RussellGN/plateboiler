@@ -1,9 +1,11 @@
 //! main binary functions
 //! all data types and their implementations are in the `data` module
 
-pub mod constants;
-pub mod data;
-pub mod utils;
+mod constants;
+mod data;
+mod utils;
+
+pub use utils::{clear_terminal, red_log, yellow_log};
 
 use std::env;
 

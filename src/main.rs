@@ -11,7 +11,7 @@
 
 use std::process;
 
-use plateboiler::utils::{clear_terminal, red_log, yellow_log};
+use plateboiler::{clear_terminal, red_log, yellow_log};
 use plateboiler::{get_program_args, run_program};
 
 const ERROR_EXIT_CODE: i32 = 0; // Not an error exit code, I know. using it so that terminal doesnt print extra text on-exit
