@@ -77,30 +77,6 @@ pub fn prompt_input(prompt: &str) -> PEResult<String> {
     Ok(input)
 }
 
-pub fn run_cmds_in_sequence(cmds: &[&str]) -> PEResult {
-    let mut cmd_sequence;
-    if consts::OS == "linux" {
-        cmd_sequence = Command::new("sh");
-        cmd_sequence.arg("-c");
-    } else if consts::OS == "windows" {
-        cmd_sequence = Command::new("cmd");
-        cmd_sequence.arg("/C");
-    } else {
-        return Err(ProgramError::new(format!("OS not supported by CLI")));
-    }
-
-    for cmd in cmds {
-        cmd_sequence.arg(cmd);
-        cmd_sequence.arg("&&");
-    }
-    let status = cmd_sequence.status();
-    if let Err(e) = status {
-        return Err(ProgramError::new(format!("Error running commands. {e}")));
-    }
-
-    Ok(())
-}
-
 pub fn log_if_verbose(msg: &str, flags: &[Flag]) {
     if flags.contains(&Flag::Verbose) {
         blue_log(msg);
@@ -114,12 +90,6 @@ pub fn red_log(s: &str) {
 pub fn blue_log(s: &str) {
     println!("{}", s.blue());
 }
-pub fn green_log(s: &str) {
-    println!("{}", s.green());
-}
 pub fn yellow_log(s: &str) {
     println!("{}", s.yellow());
-}
-pub fn underlined_log(s: &str) {
-    println!("{}", s.underline());
 }
