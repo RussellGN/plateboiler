@@ -16,6 +16,7 @@ pub struct ProgramError {
     message: String,
 }
 
+// IMPORTANT! update enum values in tandem with constants::VALID_PROJECT_OPTIONS
 #[derive(Debug, Clone, Copy)]
 pub enum ProjectType {
     Django,
@@ -23,6 +24,7 @@ pub enum ProjectType {
     Next,
 }
 
+// IMPORTANT! update enum values in tandem with constants::VALID_FLAGS
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Flag {
     Help,
