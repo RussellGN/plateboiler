@@ -4,8 +4,11 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::utils::{
-    self, log_if_verbose, prompt_input, run_child_cmd, run_seperate_cmd, yellow_log, PEResult,
+use crate::{
+    constants::{VALID_FLAGS, VALID_PROJECT_OPTIONS},
+    utils::{
+        self, log_if_verbose, prompt_input, run_child_cmd, run_seperate_cmd, yellow_log, PEResult,
+    },
 };
 
 #[derive(Debug)]
@@ -13,15 +16,16 @@ pub struct ProgramError {
     message: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ProjectType {
     Django,
     React,
     Next,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Flag {
+    Help,
     Verbose,
 }
 
@@ -74,22 +78,28 @@ impl ProgramArguments {
     }
 
     fn map_string_to_project_type(s: &str) -> PEResult<ProjectType> {
-        match s {
-            "django" => Ok(ProjectType::Django),
-            "react" => Ok(ProjectType::React),
-            "next" => Ok(ProjectType::Next),
-            _ => Err(ProgramError::new(format!(
+        let project_type = VALID_PROJECT_OPTIONS
+            .iter()
+            .find(|project_type| project_type.0 == s);
+
+        if let Some(project_type) = project_type {
+            Ok(project_type.1)
+        } else {
+            Err(ProgramError::new(format!(
                 "'{s}' is not a valid project type, run again with --help or -h for more info."
-            ))),
+            )))
         }
     }
 
     fn map_string_to_flag(s: &str) -> PEResult<Flag> {
-        match s {
-            "-v" | "--verbose" => Ok(Flag::Verbose),
-            _ => Err(ProgramError::new(format!(
+        let flag = VALID_FLAGS.iter().find(|flag| flag.0 == s || flag.1 == s);
+
+        if let Some(flag) = flag {
+            Ok(flag.2)
+        } else {
+            Err(ProgramError::new(format!(
                 "'{s}' is not a valid flag, run again with --help or -h for more info."
-            ))),
+            )))
         }
     }
 }
@@ -401,11 +411,11 @@ impl Terminal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::VALID_OPTIONS;
+    use crate::constants::VALID_PROJECT_OPTIONS;
 
     #[test]
     fn valid_raw_args_return_bin_args() {
-        for valid_option in VALID_OPTIONS {
+        for valid_option in VALID_PROJECT_OPTIONS {
             let raw_args = [valid_option.0].into_iter().map(|s_ref| s_ref.to_string());
             ProgramArguments::build(raw_args).unwrap();
         }
