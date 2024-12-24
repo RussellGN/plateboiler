@@ -401,31 +401,20 @@ impl Terminal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::{VALID_FLAGS, VALID_OPTIONS};
+    use crate::constants::VALID_OPTIONS;
 
     #[test]
     fn valid_raw_args_return_bin_args() {
         for valid_option in VALID_OPTIONS {
-            let mut valid_options_and_flags = VALID_FLAGS.to_vec();
-            valid_options_and_flags.push(valid_option);
-
-            let param = valid_options_and_flags
-                .iter()
-                .map(|s| s.to_string())
-                .into_iter();
-
-            ProgramArguments::build(param).unwrap();
+            let raw_args = [valid_option.0].into_iter().map(|s_ref| s_ref.to_string());
+            ProgramArguments::build(raw_args).unwrap();
         }
     }
 
     #[test]
     #[should_panic]
     fn invalid_raw_args_return_error() {
-        let invalid_options_and_flags = vec![
-            String::from("invalid-option"),
-            String::from("--invalid-flag"),
-        ];
-
-        ProgramArguments::build(invalid_options_and_flags.into_iter()).unwrap();
+        let invalid_raw_args = [String::from("invalid-option")].into_iter();
+        ProgramArguments::build(invalid_raw_args).unwrap();
     }
 }
