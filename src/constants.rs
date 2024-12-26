@@ -1,4 +1,4 @@
-use crate::data::{Flag, ProjectType};
+use crate::data::{Flag, ProjectType, Value};
 
 type Name = &'static str;
 type Description = &'static str;
@@ -16,7 +16,8 @@ pub const VALID_PROJECT_OPTIONS: [(Name, ProjectType, Description); 3] = [
 /// The only flags you can pass to the CLI, along with their short forms, corresponding Flag enums, and descriptions.
 /// Some flags only have an effect when passed with certain options. In these cases other non compatible flags will be completely egnored.
 /// `flag = (long_form, short_form, Flag, description)`.
-pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 2] = [
+pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 3] = [
     ("--help", "-h", Flag::Help, "Show CLI help. If passed with an option, shows option description and optional flags with their descriptions."),
-    ("--verbose", "-v",Flag::Verbose, "Show all CLI output."),
+    ("--verbose", "-v", Flag::Verbose, "Show all CLI output."),
+    ("--name", "-n", Flag::Name(Value(None)), "Set name of project (--name=<project_name>).")
 ];

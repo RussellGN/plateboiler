@@ -25,10 +25,11 @@ pub enum ProjectType {
 }
 
 // IMPORTANT! update enum values in tandem with constants::VALID_FLAGS
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Flag {
     Help,
     Verbose,
+    Name(Value),
 }
 
 struct Terminal {
@@ -41,6 +42,15 @@ pub struct ProgramArguments {
     flags: Vec<Flag>,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Value(pub Option<String>);
+
+impl Clone for Value {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 impl ProgramArguments {
     pub fn build<T: Iterator<Item = String>>(mut raw_args: T) -> PEResult<Self> {
         let mut project_type: Option<ProjectType> = None;
@@ -49,7 +59,7 @@ impl ProgramArguments {
         while let Some(mut arg) = raw_args.next() {
             arg = arg.trim().to_lowercase();
             if arg.starts_with("-") {
-                flags.push(Self::map_string_to_flag(&arg)?);
+                flags.push(Self::map_string_to_flag(arg)?);
             } else if project_type.is_none() {
                 project_type = Some(Self::map_string_to_project_type(&arg)?);
             } else {
@@ -93,14 +103,35 @@ impl ProgramArguments {
         }
     }
 
-    fn map_string_to_flag(s: &str) -> PEResult<Flag> {
+    fn map_string_to_flag(s: String) -> PEResult<Flag> {
         let flag = VALID_FLAGS.iter().find(|flag| flag.0 == s || flag.1 == s);
 
         if let Some(flag) = flag {
-            Ok(flag.2)
+            Ok(flag.2.to_owned())
+        } else {
+            Self::map_flag_with_value(s)
+        }
+    }
+
+    fn map_flag_with_value(s: String) -> PEResult<Flag> {
+        let s_split: Vec<_> = s.split("=").collect();
+        let key = s_split[0];
+        let value = s_split[1];
+
+        let flag = VALID_FLAGS
+            .iter()
+            .find(|flag| key == flag.0 || key == flag.1);
+
+        if let Some(flag) = flag {
+            match flag.2 {
+                Flag::Name(_) => Ok(Flag::Name(Value(Some(value.to_string())))),
+                _ => Err(ProgramError::new(format!(
+                    "'{key}' is not a valid flag, run again with --help or -h for more info."
+                ))),
+            }
         } else {
             Err(ProgramError::new(format!(
-                "'{s}' is not a valid flag, run again with --help or -h for more info."
+                "'{key}' is not a valid flag, run again with --help or -h for more info."
             )))
         }
     }
@@ -301,9 +332,28 @@ impl ProjectType {
         Ok(())
     }
 
+    fn get_project_name(flags: &[Flag]) -> Option<String> {
+        let name = flags.iter().find(|flag| match flag {
+            Flag::Name(_) => true,
+            _ => false,
+        });
+
+        if let Some(Flag::Name(Value(Some(name)))) = name {
+            Some(name.to_string())
+        } else {
+            None
+        }
+    }
+
     fn set_up_django_project(&self, flags: &[Flag]) -> PEResult {
         // create dir
-        let mut proj_name = prompt_input("Enter project name: ")?;
+        let flag_set_proj_name = Self::get_project_name(&flags);
+        let mut proj_name = if let Some(s) = flag_set_proj_name {
+            s
+        } else {
+            prompt_input("Enter project name: ")?
+        };
+
         proj_name = proj_name.trim().to_string();
         log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
         if let Err(e) = fs::DirBuilder::new().create(&proj_name) {
