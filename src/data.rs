@@ -6,9 +6,7 @@ use std::{
 
 use crate::{
     constants::{VALID_FLAGS, VALID_PROJECT_OPTIONS},
-    utils::{
-        self, log_if_verbose, prompt_input, run_child_cmd, run_seperate_cmd, yellow_log, PEResult,
-    },
+    utils::{self, log_if_verbose, prompt_input, yellow_log, PEResult},
 };
 
 #[derive(Debug)]
