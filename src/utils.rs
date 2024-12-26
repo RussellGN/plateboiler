@@ -6,7 +6,7 @@ use std::{
     process::Command,
 };
 
-use crate::data::{Flag, ProgramError};
+use crate::data::ProgramError;
 
 pub type PEResult<T = ()> = Result<T, ProgramError>;
 
@@ -75,12 +75,6 @@ pub fn prompt_input(prompt: &str) -> PEResult<String> {
         )));
     };
     Ok(input)
-}
-
-pub fn log_if_verbose(msg: &str, flags: &[Flag]) {
-    if flags.contains(&Flag::Verbose) {
-        blue_log(msg);
-    }
 }
 
 // colored log functions

@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     constants::{VALID_FLAGS, VALID_PROJECT_OPTIONS},
-    utils::{self, log_if_verbose, prompt_input, yellow_log, PEResult},
+    utils::{self, blue_log, prompt_input, yellow_log, PEResult},
 };
 
 #[derive(Debug)]
@@ -148,7 +148,7 @@ impl ProgramError {
 
 impl ProjectType {
     pub fn set_up(&self, flags: &[Flag]) -> PEResult {
-        log_if_verbose(format!("setting up {self:?} project").as_str(), flags);
+        Flag::log_if_verbose(format!("setting up {self:?} project").as_str(), flags);
 
         match self {
             ProjectType::Django => self.set_up_django_project(flags),
@@ -158,7 +158,7 @@ impl ProjectType {
     }
 
     pub fn check_for_required_tooling(&self, flags: &[Flag]) -> PEResult {
-        log_if_verbose(
+        Flag::log_if_verbose(
             format!("checking required tooling for a {self:?} project...").as_str(),
             flags,
         );
@@ -240,26 +240,9 @@ impl ProjectType {
         Ok(())
     }
 
-    fn get_project_name(flags: &[Flag]) -> Option<String> {
-        let name = flags.iter().find(|flag| match flag {
-            Flag::Name(_) => true,
-            _ => false,
-        });
-
-        if let Some(Flag::Name(Value(Some(name)))) = name {
-            Some(name.to_string())
-        } else {
-            None
-        }
-    }
-
-    fn is_test_run(flags: &[Flag]) -> bool {
-        flags.contains(&Flag::Test)
-    }
-
     fn set_up_django_project(&self, flags: &[Flag]) -> PEResult {
         // create dir
-        let flag_set_proj_name = Self::get_project_name(&flags);
+        let flag_set_proj_name = Flag::get_project_name(&flags);
         let mut proj_name = if let Some(s) = flag_set_proj_name {
             s
         } else {
@@ -267,9 +250,9 @@ impl ProjectType {
         };
 
         proj_name = proj_name.trim().to_string();
-        log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
+        Flag::log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
 
-        let is_test_run = Self::is_test_run(&flags);
+        let is_test_run = Flag::is_test_run(&flags);
         if is_test_run {
             proj_name = format!("test_runs/{proj_name}");
             let test_run_path = Path::new("test_runs");
@@ -362,7 +345,7 @@ impl Terminal {
     }
 
     pub fn run_cmd(&mut self, cmd: &str, err_msg: &str, log_msg: &str, flags: &[Flag]) -> PEResult {
-        log_if_verbose(log_msg, flags);
+        Flag::log_if_verbose(log_msg, flags);
         let output = Command::new(&self.base_shell_args[0])
             .arg(&self.base_shell_args[1])
             .arg(cmd)
@@ -384,6 +367,31 @@ impl Terminal {
         }
 
         Ok(())
+    }
+}
+
+impl Flag {
+    pub fn log_if_verbose(msg: &str, flags: &[Self]) {
+        if flags.contains(&Self::Verbose) {
+            blue_log(msg);
+        }
+    }
+
+    fn get_project_name(flags: &[Self]) -> Option<String> {
+        let name = flags.iter().find(|flag| match flag {
+            Self::Name(_) => true,
+            _ => false,
+        });
+
+        if let Some(Self::Name(Value(Some(name)))) = name {
+            Some(name.to_string())
+        } else {
+            None
+        }
+    }
+
+    fn is_test_run(flags: &[Self]) -> bool {
+        flags.contains(&Self::Test)
     }
 }
 
