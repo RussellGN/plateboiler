@@ -16,8 +16,9 @@ pub const VALID_PROJECT_OPTIONS: [(Name, ProjectType, Description); 3] = [
 /// The only flags you can pass to the CLI, along with their short forms, corresponding Flag enums, and descriptions.
 /// Some flags only have an effect when passed with certain options. In these cases other non compatible flags will be completely egnored.
 /// `flag = (long_form, short_form, Flag, description)`.
-pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 3] = [
+pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 4] = [
     ("--help", "-h", Flag::Help, "Show CLI help. If passed with an option, shows option description and optional flags with their descriptions."),
     ("--verbose", "-v", Flag::Verbose, "Show all CLI output."),
-    ("--name", "-n", Flag::Name(Value(None)), "Set name of project (--name=<project_name>).")
+    ("--name", "-n", Flag::Name(Value(None)), "Set name of project (--name=<project_name>)."),
+    ("--test", "-t", Flag::Test, "Set the target directory of the project folder to <currrent-directory>/test_runs.")
 ];

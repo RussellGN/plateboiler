@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -30,6 +30,7 @@ pub enum Flag {
     Help,
     Verbose,
     Name(Value),
+    Test,
 }
 
 struct Terminal {
@@ -254,6 +255,10 @@ impl ProjectType {
         }
     }
 
+    fn is_test_run(flags: &[Flag]) -> bool {
+        flags.contains(&Flag::Test)
+    }
+
     fn set_up_django_project(&self, flags: &[Flag]) -> PEResult {
         // create dir
         let flag_set_proj_name = Self::get_project_name(&flags);
@@ -265,6 +270,21 @@ impl ProjectType {
 
         proj_name = proj_name.trim().to_string();
         log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
+
+        let is_test_run = Self::is_test_run(&flags);
+        if is_test_run {
+            proj_name = format!("test_runs/{proj_name}");
+            let test_run_path = Path::new("test_runs");
+            if !test_run_path.try_exists().is_ok_and(|b| b) {
+                if let Err(e) = fs::DirBuilder::new().create(test_run_path) {
+                    return Err(ProgramError::new(format!(
+                        "Failed to create test_runs directory '{}'. ",
+                        e.kind()
+                    )));
+                }
+            }
+        }
+
         if let Err(e) = fs::DirBuilder::new().create(&proj_name) {
             return Err(ProgramError::new(format!(
                 "Failed to create project folder '{}'. ",
