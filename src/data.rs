@@ -1,3 +1,5 @@
+use colored::*;
+
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -5,9 +7,18 @@ use std::{
 };
 
 use crate::{
-    constants::{VALID_FLAGS, VALID_PROJECT_OPTIONS},
+    constants::{
+        CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS, VALID_FLAGS,
+        VALID_PROJECT_OPTIONS,
+    },
     utils::{self, blue_log, prompt_input, yellow_log, PEResult},
 };
+
+#[derive(PartialEq)]
+pub enum DidSomething {
+    Yes,
+    No,
+}
 
 #[derive(Debug)]
 pub struct ProgramError {
@@ -15,7 +26,7 @@ pub struct ProgramError {
 }
 
 // IMPORTANT! update enum values in tandem with constants::VALID_PROJECT_OPTIONS
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProjectType {
     Django,
     React,
@@ -37,7 +48,7 @@ struct Terminal {
 }
 
 pub struct ProgramArguments {
-    project_type: ProjectType,
+    project_type: Option<ProjectType>,
     flags: Vec<Flag>,
 }
 
@@ -68,19 +79,13 @@ impl ProgramArguments {
             }
         }
 
-        if project_type.is_some() {
-            Ok(Self {
-                project_type: project_type.unwrap(),
-                flags,
-            })
-        } else {
-            Err(ProgramError::new(
-                "No valid project type provided".to_string(),
-            ))
-        }
+        Ok(Self {
+            project_type,
+            flags,
+        })
     }
 
-    pub fn get_project_type(&self) -> &ProjectType {
+    pub fn get_project_type(&self) -> &Option<ProjectType> {
         &self.project_type
     }
 
@@ -392,6 +397,59 @@ impl Flag {
 
     fn is_test_run(flags: &[Self]) -> bool {
         flags.contains(&Self::Test)
+    }
+
+    pub fn handle_help_flag(prog_args: &ProgramArguments) -> DidSomething {
+        if prog_args.get_flags().contains(&Self::Help) {
+            if let Some(project_type) = prog_args.get_project_type() {
+                let proj_option = VALID_PROJECT_OPTIONS
+                    .iter()
+                    .find(|opt| opt.1 == *project_type);
+
+                if let Some((_, _, description)) = proj_option {
+                    println!(
+                        "PROJECT TYPE: {}\n\n{description}\n\n{}\n{}\n\n",
+                        format!("{project_type:?}").blue(),
+                        "Flags".blue(),
+                        VALID_FLAGS
+                            .iter()
+                            .enumerate()
+                            .map(|(index, opt)| format!(
+                                "{}. {} | {}: {}",
+                                index.to_string().blue(),
+                                opt.0.green(),
+                                opt.1.green(),
+                                opt.3
+                            ))
+                            .reduce(|acc_str, s| format!("{acc_str}\n{s}"))
+                            .unwrap_or("".to_string())
+                    );
+                } else {
+                    println!("No help text found for project type: {project_type:?}")
+                };
+            } else {
+                println!(
+                    "{CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS}\n\n{}:\n{}\n\n{}:\n{}\n\n",
+                     "Project Types".blue(),
+                    VALID_PROJECT_OPTIONS
+                    .iter()
+                    .enumerate()
+                    .map(|(index, opt)| format!("{}. {}: {}", index.to_string().blue(), opt.0.green(), opt.2) )
+                    .reduce(|acc_str, s| format!("{acc_str}\n{s}")).unwrap_or("".to_string())
+                    ,"Flags".blue(),
+                    VALID_FLAGS
+                    .iter()
+                    .enumerate()
+                    .map(|(index, opt)| format!("{}. {} | {}: {}", index.to_string().blue(), opt.0.green(), opt.1.green(), opt.3) )
+                    .reduce(|acc_str, s| format!("{acc_str}\n{s}")).unwrap_or("".to_string())
+
+                );
+            }
+
+            DidSomething::Yes
+        } else {
+            DidSomething::No
+        }
     }
 }
 

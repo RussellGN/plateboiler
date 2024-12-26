@@ -22,3 +22,5 @@ pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 4] = [
     ("--name", "-n", Flag::Name(Value(None)), "Set name of project (--name=<project_name>)."),
     ("--test", "-t", Flag::Test, "Set the target directory of the project folder to <currrent-directory>/test_runs.")
 ];
+
+pub const CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS: &str = "Plateboiler CLI HELP:\nThis CLI program helps setup various types of dev projects, think npm projects and the likes. For the time being. It will only setup npm and python projects and allow configuration of common workflows.\nIt walks you through prompts asking for the type of project you want setup and any dependencies along with it, similar to more specific framework CLIs\n\nUSAGE:\nrun with: <project-type> <flags>";
