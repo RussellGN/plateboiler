@@ -159,7 +159,7 @@ impl ProjectType {
         match self {
             ProjectType::Django => self.set_up_django_project(flags),
             ProjectType::Web => self.set_up_web_project(flags),
-            ProjectType::Next => self.set_up_next_project(),
+            ProjectType::Next => self.set_up_next_project(flags),
         }
     }
 
@@ -225,23 +225,7 @@ impl ProjectType {
     }
 
     fn check_for_next_tooling(&self) -> PEResult {
-        // check for any of node, deno, bun
-        let cmds = ["node --version || deno --version"];
-        if utils::check_if_any_command_passes(&cmds).is_err() {
-            return Err(ProgramError::new(format!(
-                "Could not confirm if any of Node, or Deno is installed, in order to set up a {self:?} project."
-            )));
-        }
-
-        // check for any of npm, yarn, pnpm, deno, bun
-        let cmds = ["npm --version || yarn --version || pnpm --version || deno --version"];
-        if utils::check_if_any_command_passes(&cmds).is_err() {
-            return Err(ProgramError::new(format!(
-                "Could not confirm if any of Npm, Yarn, Pnpm, or Deno is installed, in order to set up a {self:?} project."
-            )));
-        }
-
-        Ok(())
+        self.check_for_node_js_tooling()
     }
 
     fn set_up_django_project(&self, flags: &[Flag]) -> PEResult {
@@ -401,8 +385,73 @@ impl ProjectType {
         Ok(())
     }
 
-    fn set_up_next_project(&self) -> PEResult {
-        todo!("set_up_next_project")
+    fn set_up_next_project(&self, flags: &[Flag]) -> PEResult {
+        // create dir
+        let flag_set_proj_name = Flag::get_project_name(&flags);
+        let mut proj_name = if let Some(s) = flag_set_proj_name {
+            s
+        } else {
+            prompt_input("Enter project name: ")?
+        };
+
+        proj_name = proj_name.trim().to_string();
+        Flag::log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
+
+        let is_test_run = Flag::is_test_run(&flags);
+        if is_test_run {
+            proj_name = format!("test_runs/{proj_name}");
+            let test_run_path = Path::new("test_runs");
+            if !test_run_path.try_exists().is_ok_and(|b| b) {
+                if let Err(e) = fs::DirBuilder::new().create(test_run_path) {
+                    return Err(ProgramError::new(format!(
+                        "Failed to create test_runs directory '{}'. ",
+                        e.kind()
+                    )));
+                }
+            }
+        }
+
+        if let Err(e) = fs::DirBuilder::new().create(&proj_name) {
+            return Err(ProgramError::new(format!(
+                "Failed to create project folder '{}'. ",
+                e.kind()
+            )));
+        }
+
+        // create terminal
+        let proj_dir = env::current_dir().unwrap().join(&proj_name);
+        let mut terminal = Terminal::new(proj_dir.clone());
+
+        // run next cli
+        terminal.run_cmd(
+            "npx create-next-app@latest",
+            "Failed to create next app with npm.",
+            "creating next app",
+            flags,
+        )?;
+
+        // cd into project
+        let proj_dir_contents = proj_dir.read_dir();
+        if let Ok(mut dirs) = proj_dir_contents {
+            if let Some(dir) = dirs.next() {
+                if dir.is_ok() {
+                    terminal.working_dir = dir.unwrap().path();
+                    green_log(format!("moved into: {:#?}", terminal.working_dir).as_str());
+                };
+            };
+        };
+
+        // run the dev server
+        terminal.run_cmd(
+            "npm run dev",
+            "Failed to run dev server.",
+            "running dev server...",
+            flags,
+        )?;
+
+        // TODO open it in file explorer/code
+
+        Ok(())
     }
 }
 
