@@ -1,7 +1,8 @@
 use colored::*;
 
 use std::{
-    env, fs,
+    env,
+    fs::{self},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -11,7 +12,7 @@ use crate::{
         CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS, VALID_FLAGS,
         VALID_PROJECT_OPTIONS,
     },
-    utils::{self, blue_log, prompt_input, yellow_log, PEResult},
+    utils::{self, blue_log, green_log, prompt_input, yellow_log, PEResult},
 };
 
 #[derive(PartialEq)]
@@ -157,7 +158,7 @@ impl ProjectType {
 
         match self {
             ProjectType::Django => self.set_up_django_project(flags),
-            ProjectType::React => self.set_up_react_project(),
+            ProjectType::React => self.set_up_react_project(flags),
             ProjectType::Next => self.set_up_next_project(),
         }
     }
@@ -204,21 +205,19 @@ impl ProjectType {
     }
 
     fn check_for_react_tooling(&self) -> PEResult {
-        // check for any of node, deno, bun
-        let cmds = ["node --version || deno --version || bun --version"];
+        // check for node js
+        let cmds = ["node --version"];
         if utils::check_if_any_command_passes(&cmds).is_err() {
             return Err(ProgramError::new(format!(
-                "Could not confirm if any of Node, Deno, or Bun is installed, in order to set up a {self:?} project."
+                "Could not confirm if Node js is installed, in order to set up a {self:?} project."
             )));
         }
 
-        // check for any of npm, yarn, pnpm, deno, bun
-        let cmds = [
-            "npm --version || yarn --version || pnpm --version || bun --version || deno --version",
-        ];
+        // check for npm
+        let cmds = ["npm --version"];
         if utils::check_if_any_command_passes(&cmds).is_err() {
             return Err(ProgramError::new(format!(
-                "Could not confirm if any of Npm, Yarn, Pnpm, Deno, or Bun is installed, in order to set up a {self:?} project."
+                "Could not confirm if Npm is installed, in order to set up a {self:?} project."
             )));
         }
 
@@ -325,8 +324,81 @@ impl ProjectType {
         Ok(())
     }
 
-    fn set_up_react_project(&self) -> PEResult {
-        todo!("set_up_react_project")
+    fn set_up_react_project(&self, flags: &[Flag]) -> PEResult {
+        // create dir
+        let flag_set_proj_name = Flag::get_project_name(&flags);
+        let mut proj_name = if let Some(s) = flag_set_proj_name {
+            s
+        } else {
+            prompt_input("Enter project name: ")?
+        };
+
+        proj_name = proj_name.trim().to_string();
+        Flag::log_if_verbose(format!("creating {proj_name:?} directory").as_str(), flags);
+
+        let is_test_run = Flag::is_test_run(&flags);
+        if is_test_run {
+            proj_name = format!("test_runs/{proj_name}");
+            let test_run_path = Path::new("test_runs");
+            if !test_run_path.try_exists().is_ok_and(|b| b) {
+                if let Err(e) = fs::DirBuilder::new().create(test_run_path) {
+                    return Err(ProgramError::new(format!(
+                        "Failed to create test_runs directory '{}'. ",
+                        e.kind()
+                    )));
+                }
+            }
+        }
+
+        if let Err(e) = fs::DirBuilder::new().create(&proj_name) {
+            return Err(ProgramError::new(format!(
+                "Failed to create project folder '{}'. ",
+                e.kind()
+            )));
+        }
+
+        // create terminal
+        let proj_dir = env::current_dir().unwrap().join(&proj_name);
+        let mut terminal = Terminal::new(proj_dir.clone());
+
+        // run vite cli
+        terminal.run_cmd(
+            "npm create vite@latest",
+            "Failed to create vite app with npm.",
+            "creating vite app",
+            flags,
+        )?;
+
+        // cd into project
+        let proj_dir_contents = proj_dir.read_dir();
+        if let Ok(mut dirs) = proj_dir_contents {
+            if let Some(dir) = dirs.next() {
+                if dir.is_ok() {
+                    terminal.working_dir = dir.unwrap().path();
+                    green_log(format!("moved into: {:#?}", terminal.working_dir).as_str());
+                };
+            };
+        };
+
+        // npm install
+        terminal.run_cmd(
+            "npm install",
+            "Failed to install node modules.",
+            "installing node modules...",
+            flags,
+        )?;
+
+        // run the dev server
+        terminal.run_cmd(
+            "npm run dev",
+            "Failed to run dev server.",
+            "running dev server...",
+            flags,
+        )?;
+
+        // TODO open it in file explorer/code
+
+        Ok(())
     }
 
     fn set_up_next_project(&self) -> PEResult {
@@ -355,6 +427,7 @@ impl Terminal {
             .arg(&self.base_shell_args[1])
             .arg(cmd)
             .current_dir(&self.working_dir)
+            .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .output();
