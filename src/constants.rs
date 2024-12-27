@@ -9,7 +9,7 @@ type LongForm = &'static str;
 /// `option = (option, ProjectType, description)`.
 pub const VALID_PROJECT_OPTIONS: [(Name, ProjectType, Description); 3] = [
     ("django", ProjectType::Django, "Python Django web-framework project. Requires Python version 3. Sets up a virtual environment 'venv' using the standard venv module; Installs Django into venv using pip; Starts a Django project 'core'; Runs the Django dev server."), 
-    ("react", ProjectType::React,"Javascript (or TS) React web-app project with Vite. Currently requires/uses Node.js. Uses NPM and Vite CLI to set up a React project with further configurations prompted to user (piped from Vite CLI). Runs the Vite dev server"), 
+    ("web", ProjectType::Web,"Javascript (or TS) Web-app project with Vite (React/Vue/Angular etc). Currently requires/uses Node.js. Uses NPM and Vite CLI to set up a Web project with further configurations prompted to user (piped from Vite CLI). Installs node modules and runs the Vite dev server"), 
     ("next", ProjectType::Next,"Javascript (or TS) Next web-framework project. Currently requires/uses Node.js. Uses NPM and Next CLI to set up a Next project with further configurations prompted to user (piped from Next CLI). Runs the Next dev server")
     ];
 
@@ -23,4 +23,4 @@ pub const VALID_FLAGS: [(LongForm, ShortForm, Flag, Description); 4] = [
     ("--test", "-t", Flag::Test, "Set the target directory of the project folder to <currrent-directory>/test_runs.")
 ];
 
-pub const CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS: &str = "Plateboiler CLI HELP:\nThis CLI program helps setup various types of dev projects, think npm projects and the likes. For the time being. It will only setup npm and python projects and allow configuration of common workflows.\nIt walks you through prompts asking for the type of project you want setup and any dependencies along with it, similar to more specific framework CLIs\n\nUSAGE:\nrun with: <project-type> <flags>";
+pub const CLI_HELP_TEXT_WITHOUT_PROJECT_NOR_FLAG_OPTION_DESCRIPTIONS: &str = "Plateboiler CLI HELP:\nThis CLI program helps setup various types of dev projects, think npm projects and the likes. For the time being. It will only setup web-app projects using npm and vite, as well as python projects.\nIt walks you through prompts asking for the type of project you want set up and any dependencies along with it, similar to more specific framework CLIs\n\nUSAGE:\nrun with: <project-type> <flags>";

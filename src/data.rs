@@ -30,7 +30,7 @@ pub struct ProgramError {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProjectType {
     Django,
-    React,
+    Web,
     Next,
 }
 
@@ -158,7 +158,7 @@ impl ProjectType {
 
         match self {
             ProjectType::Django => self.set_up_django_project(flags),
-            ProjectType::React => self.set_up_react_project(flags),
+            ProjectType::Web => self.set_up_web_project(flags),
             ProjectType::Next => self.set_up_next_project(),
         }
     }
@@ -171,7 +171,7 @@ impl ProjectType {
 
         match self {
             ProjectType::Django => self.check_for_django_tooling(),
-            ProjectType::React => self.check_for_react_tooling(),
+            ProjectType::Web => self.check_for_node_js_tooling(),
             ProjectType::Next => self.check_for_next_tooling(),
         }
     }
@@ -204,7 +204,7 @@ impl ProjectType {
         Ok(())
     }
 
-    fn check_for_react_tooling(&self) -> PEResult {
+    fn check_for_node_js_tooling(&self) -> PEResult {
         // check for node js
         let cmds = ["node --version"];
         if utils::check_if_any_command_passes(&cmds).is_err() {
@@ -324,7 +324,7 @@ impl ProjectType {
         Ok(())
     }
 
-    fn set_up_react_project(&self, flags: &[Flag]) -> PEResult {
+    fn set_up_web_project(&self, flags: &[Flag]) -> PEResult {
         // create dir
         let flag_set_proj_name = Flag::get_project_name(&flags);
         let mut proj_name = if let Some(s) = flag_set_proj_name {
